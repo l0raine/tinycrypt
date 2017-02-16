@@ -123,33 +123,26 @@ uint32_t CK(int i)
 }
   
 void sm4_setkey(sm4_ctx *c, const void *key, int enc) {
-    uint32_t *rk=c->rk;
-    uint32_t *k=(uint32_t*)key;
-    uint32_t t; 
-    int      i;
+    uint32_t t, rk0, rk1, rk2, rk3; 
+    int      i;    
     
     // load the key
-    for (i=0; i<4; i++) {
-      k[i] = SWAP32(((uint32_t*)key)[i]);
-    }
-    // xor FK values
-    k[0] ^= 0xa3b1bac6; k[1] ^= 0x56aa3350;
-    k[2] ^= 0x677d9197; k[3] ^= 0xb27022dc;
-
-    // setup 4 sub keys
-    rk[0] = k[0] ^ T(k[1]  ^ k[2]  ^  k[3] ^ 0x00070e15, 0);
-    rk[1] = k[1] ^ T(k[2]  ^ k[3]  ^ rk[0] ^ 0x1c232a31, 0);
-    rk[2] = k[2] ^ T(k[3]  ^ rk[0] ^ rk[1] ^ 0x383f464d, 0);
-    rk[3] = k[3] ^ T(rk[0] ^ rk[1] ^ rk[2] ^ 0x545b6269, 0);
+    rk0 = SWAP32(((uint32_t*)key)[0]);
+    rk1 = SWAP32(((uint32_t*)key)[1]);
+    rk2 = SWAP32(((uint32_t*)key)[2]);
+    rk3 = SWAP32(((uint32_t*)key)[3]);
     
-    // generate remaining 28
-    for (i=4; i<32; i++) 
-    {
-      rk[i] = rk[i-4] ^ 
-            T(rk[i-3] ^ 
-              rk[i-2] ^ 
-              rk[i-1] ^ 
-              CK(i), 0);
+    // xor FK values
+    rk0 ^= 0xa3b1bac6; rk1 ^= 0x56aa3350;
+    rk2 ^= 0x677d9197; rk3 ^= 0xb27022dc;
+    
+    // generate 32 sub keys
+    for (i=0; i<32; i++) {
+      rk0 ^= T(rk1 ^ rk2 ^ rk3 ^ CK(i), 0);
+      rk[i] = rk0;
+      XCHG(rk0, rk1);
+      XCHG(rk1, rk2);
+      XCHG(rk2, rk3);
     }
     // reverse the order of keys if decrypting
     if (enc == SM4_DECRYPT) {
@@ -158,6 +151,7 @@ void sm4_setkey(sm4_ctx *c, const void *key, int enc) {
       }
     }
 }
+
 
 void sm4_encrypt(sm4_ctx *c, void *buf)
 {

@@ -100,7 +100,10 @@ extern "C" {
 #endif
 
 void sm4_setkey(sm4_ctx*,void*, int);
+void sm4_setkeyx(sm4_ctx*,void*, int);
+
 void sm4_encrypt(sm4_ctx*,void*);
+void sm4_encryptx(sm4_ctx*,void*);
 
 #ifdef __cplusplus  
 }

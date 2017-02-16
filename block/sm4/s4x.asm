@@ -28,9 +28,9 @@
 ;  POSSIBILITY OF SUCH DAMAGE.
 ;
 ; -----------------------------------------------
-; SM4-128 block cipher in x86 assembly
+; SM4 block cipher in x86 assembly
 ;
-; size: ???
+; size: 502 bytes
 ;
 ; global calls use cdecl convention
 ;
@@ -50,82 +50,90 @@ struc pushad_t
   .size:
 endstruc
 
-%define k0 ebx
-%define k1 edx
-%define k2 ebp
-%define k3 esi
+%ifndef BIN
+  global sm4_setkeyx
+  global _sm4_setkeyx
 
-sm4_setkey:
-_sm4_setkey:
+  global sm4_encryptx
+  global _sm4_encryptx
+%endif
+
+; the defines use same registers for a reason
+; the T function expects them to be same.
+
+; for the encryption
+%define  x0 ebx
+%define  x1 edx 
+%define  x2 ebp 
+%define  x3 esi
+
+; for the key setup
+%define rk0 ebx
+%define rk1 edx 
+%define rk2 ebp 
+%define rk3 esi
+
+; expects ecx to hold index
+; returns constant in eax
+CK:
+    pushad
+    xor    eax, eax          ; ck = 0
+    cdq                      ; j  = 0
+ck_l0: 
+    shl    eax, 8            ; ck <<= 8
+    lea    ebx, [ecx*4+edx]  ; ebx = (i*4) + j
+    imul   ebx, ebx, 7       ; ebx *= 7
+    or     al, bl            ; ck |= ebx %= 256
+    inc    edx               ; j++
+    cmp    edx, 4            ; j<4
+    jnz    ck_l0
+    mov    [esp+_eax], eax   ; return ck
+    popad
+    ret
+    
+sm4_setkeyx:
+_sm4_setkeyx:
     pushad
     mov    edi, [esp+32+4]  ; edi = ctx
     mov    esi, [esp+32+8]  ; esi = 128-bit key
     ; load the key
     lodsd
     bswap  eax
-    xchg   eax, k0
+    xchg   eax, rk0
     lodsd
     bswap  eax
-    xchg   eax, k1
+    xchg   eax, rk1
     lodsd
     bswap  eax
-    xchg   eax, k2
+    xchg   eax, rk2
     lodsd
     bswap  eax
-    xchg   eax, k3
+    xchg   eax, rk3
     
     ; xor FK values
-    xor    k0, 0xa3b1bac6    
-    xor    k1, 0x56aa3350    
-    xor    k2, 0x677d9197    
-    xor    k3, 0xb27022dc
-    
-    ; setup 4 sub keys
-    call   T_function
-    xor    eax, k0
-    stosd
-    call   T_function
-    xor    eax, k1
-    stosd
-    call   T_function
-    xor    eax, k2
-    stosd
-    call   T_function
-    xor    eax, k3
-    stosd
-k_l0:
-    mov    eax, ecx
-    cdq
-k_l1:
-    shl    eax, 8
-    imul   eax, ecx, 4
-    add    eax, ecx
-    imul   eax, eax, 7
-    or     al, dl    
-    inc    cl
-    cmp    cl, 4
-    jnz    k_l1
-    
-    xor    eax, [edi- 4] ; rk[i-1]
-    xor    eax, [edi- 8] ; rk[i-2]
-    xor    eax, [edi-12] ; rk[i-3]
+    xor    rk0, 0xa3b1bac6    
+    xor    rk1, 0x56aa3350    
+    xor    rk2, 0x677d9197    
+    xor    rk3, 0xb27022dc
+    xor    ecx, ecx
+sk_l1:    
+    call   CK
     clc
-    call   T_function  
-    xor    eax, [edi-16] ; rk[i-4]
-    stosd
-    inc    ecx
+    call   T_function 
+    xor    rk0, eax
+    mov    eax, rk0
+    stosd                ; rk[i] = rk0
+    xchg   rk0, rk1
+    xchg   rk1, rk2
+    xchg   rk2, rk3
+    inc    ecx           ; i++
     cmp    ecx, 32
-    jnz    k_l0       
+    jnz    sk_l1       
     popad
     ret
     
-%define x0 ebx
-%define x1 edx 
-%define x2 ebp 
-%define x3 esi
-  
-sm4_encrypt:
-_sm4_encrypt:
+sm4_encryptx:
+_sm4_encryptx:
     pushad
     mov    edi, [esp+32+4] ; edi = ctx
     mov    esi, [esp+32+8] ; esi = buf
@@ -150,10 +158,7 @@ _sm4_encrypt:
     pop    ecx
 e_l0:
     ; apply F round
-    mov    eax, x1
-    xor    eax, x2
-    xor    eax, x3
-    xor    eax, [edi] ; rk[i]
+    mov    eax, [edi] ; rk[i]
     scasd
     stc
     call   T_function     
@@ -182,6 +187,9 @@ e_l0:
     
 t_l0:
     pop    ebx
+    xor    eax, x1
+    xor    eax, x2
+    xor    eax, x3
     ; apply non-linear substitution
     mov    cl, 4
 t_l1:    
@@ -223,8 +231,8 @@ T_function:
     pushad
     pushfd
     call   t_l0  ; pushes address of sbox on stack
+    ; sbox for SM4 goes here
     
-    ; sbox for SM4
     db 0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d, 0xb7 
     db 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05
     db 0x2b, 0x67, 0x9a, 0x76, 0x2a, 0xbe, 0x04, 0xc3 
