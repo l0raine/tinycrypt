@@ -30,8 +30,8 @@
 #include "sm3.h"
 
 #define  F(x, y, z) (((x) ^ (y) ^ (z)))
-#define FF(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z))) 
-#define GG(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
+#define FF(x, y, z) (((x) & (y)) | ((x) & (z)) | ((y) & (z))) 
+#define GG(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
 
 #define P0(x) x ^ ROTL32(x,  9) ^ ROTL32(x, 17)
 #define P1(x) x ^ ROTL32(x, 15) ^ ROTL32(x, 23)
@@ -43,69 +43,78 @@
 ************************************************/
 void SM3_Transform (SM3_CTX *ctx) 
 {
-    uint32_t t1, t2, i, j, t, s1, s2;
-    uint32_t w1[68], w2[64];
-    uint32_t a, b, c, d, e, f, g, h;
+    uint32_t tt1, tt2, i, j, t, ss1, ss2, x, y;
+    uint32_t w[68], s[8];
 
-    // load data in big endian format
-    for (i=0; i<16; i++) {
-      w1[i] = SWAP32(ctx->buf.w[i]);
-    }
-
-    // create first workspace
-    for (i=16; i<68; i++) {
-      w1[i] = P1(w1[i-16]       ^ 
-                 w1[i- 9]       ^ 
-          ROTL32(w1[i- 3], 15)) ^ 
-          ROTL32(w1[i-13],  7)  ^ 
-                 w1[i- 6];
-    }
-    
-    // create second workspace
-    for (i=0; i<64; i++) {
-      w2[i] = w1[i] ^ w1[i+4];
-    }
+    #define a s[0]
+    #define b s[1]
+    #define c s[2]
+    #define d s[3]
+    #define e s[4]
+    #define f s[5]
+    #define g s[6]
+    #define h s[7]
     
     // load state into local buffer
-    a = ctx->s.w[0];
-    b = ctx->s.w[1];
-    c = ctx->s.w[2];
-    d = ctx->s.w[3];
-    e = ctx->s.w[4];
-    f = ctx->s.w[5];
-    g = ctx->s.w[6];
-    h = ctx->s.w[7];
+    memcpy((uint8_t*)&s[0], (uint8_t*)&ctx->s.w[0], 8*4);
     
-    // permute
+    // load data in big endian format
+    for (i=0; i<16; i++) {
+      w[i] = SWAP32(ctx->buf.w[i]);
+    }
+
+    // expand message
+    for (i=16; i<68; i++) {
+      x = ROTL32(w[i- 3], 15);
+      y = ROTL32(w[i-13],  7);
+      
+      x ^= w[i-16];
+      x ^= w[i- 9];
+      y ^= w[i- 6];
+      
+      w[i] =  P1(x) ^ y; 
+    }
+
+    // compression function
     for (i=0; i<64; i++) {
       t  = (i < 16) ? 0x79cc4519 : 0x7a879d8a;
-      s2 = ROTL32(a, 12);      
-      s1 = ROTL32(s2 + e + ROTL32(t, i), 7);
-      s2 ^= s1;
+      
+      ss2 = ROTL32(a, 12);      
+      ss1 = ROTL32(ss2 + e + ROTL32(t, i), 7);
+      ss2 ^= ss1;
+      
+      tt1 = d + ss2 + (w[i] ^ w[i+4]);
+      tt2 = h + ss1 + w[i];
+      
       if (i < 16) {
-        t1 = F(a, b, c)  + d + s2 + w2[i];
-        t2 = F(e, f, g)  + h + s1 + w1[i];
+        tt1 += F(a, b, c);
+        tt2 += F(e, f, g);
       } else {
-        t1 = FF(a, b, c) + d + s2 + w2[i];
-        t2 = GG(e, f, g) + h + s1 + w1[i];      
+        tt1 += FF(a, b, c);
+        tt2 += GG(e, f, g);       
       }
       d = c;
       c = ROTL32(b, 9);
       b = a;
-      a = t1;
+      a = tt1;
       h = g;
       g = ROTL32(f, 19);
       f = e;
-      e = P0(t2);     
+      e = P0(tt2); 
     }
-    ctx->s.w[0] ^= a;
-    ctx->s.w[1] ^= b;
-    ctx->s.w[2] ^= c;
-    ctx->s.w[3] ^= d;
-    ctx->s.w[4] ^= e;
-    ctx->s.w[5] ^= f;
-    ctx->s.w[6] ^= g;    
-    ctx->s.w[7] ^= h;    
+    
+    // Davies–Meyer idea for compression function
+    for (i=0; i<8; i++) {
+      ctx->s.w[i] ^= s[i];
+    }    
+    #undef a
+    #undef b
+    #undef c
+    #undef d
+    #undef e
+    #undef f
+    #undef g
+    #undef h
 }
 
 /************************************************
@@ -113,16 +122,16 @@ void SM3_Transform (SM3_CTX *ctx)
 * initialize context
 *
 ************************************************/
-void SM3_Init (SM3_CTX *c) {    
-    c->s.w[0] = 0x7380166f;
-    c->s.w[1] = 0x4914b2b9;
-    c->s.w[2] = 0x172442d7;
-    c->s.w[3] = 0xda8a0600;
-    c->s.w[4] = 0xa96f30bc;
-    c->s.w[5] = 0x163138aa;
-    c->s.w[6] = 0xe38dee4d;
-    c->s.w[7] = 0xb0fb0e4e;
-    c->len = 0;
+void SM3_Init (SM3_CTX *ctx) {    
+    ctx->s.w[0] = 0x7380166f;
+    ctx->s.w[1] = 0x4914b2b9;
+    ctx->s.w[2] = 0x172442d7;
+    ctx->s.w[3] = 0xda8a0600;
+    ctx->s.w[4] = 0xa96f30bc;
+    ctx->s.w[5] = 0x163138aa;
+    ctx->s.w[6] = 0xe38dee4d;
+    ctx->s.w[7] = 0xb0fb0e4e;
+    ctx->len    = 0;
 }
 
 /************************************************
@@ -130,22 +139,24 @@ void SM3_Init (SM3_CTX *c) {
 * update state with input
 *
 ************************************************/
-void SM3_Update (SM3_CTX *c, void *in, size_t len) {
+void SM3_Update (SM3_CTX *ctx, void *in, uint32_t len) {
     uint8_t *p = (uint8_t*)in;
-    size_t r, idx;
+    uint32_t r, idx;
+    
+    if (len==0) return;
     
     // get buffer index
-    idx = c->len & SM3_CBLOCK - 1;
+    idx = ctx->len & SM3_CBLOCK - 1;
     
     // update length
-    c->len += len;
+    ctx->len += len;
     
     while (len) {
       r = MIN(len, SM3_CBLOCK - idx);
-      memcpy (&c->buf.b[idx], p, r);
+      memcpy (&ctx->buf.b[idx], p, r);
       if ((idx + r) < SM3_CBLOCK) break;
       
-      SM3_Transform (c);
+      SM3_Transform (ctx);
       len -= r;
       idx = 0;
       p += r;
@@ -157,31 +168,29 @@ void SM3_Update (SM3_CTX *c, void *in, size_t len) {
 * finalize.
 *
 ************************************************/
-void SM3_Final (void* dgst, SM3_CTX *c)
+void SM3_Final (void *out, SM3_CTX *ctx)
 {
     int i;
     
     // see what length we have ere..
-    uint32_t len=c->len & SM3_CBLOCK - 1;
+    uint32_t len=ctx->len & SM3_CBLOCK - 1;
     // fill remaining with zeros
-    memset (&c->buf.b[len], 0, SM3_CBLOCK - len);
+    memset (&ctx->buf.b[len], 0, SM3_CBLOCK - len);
     // add the end bit
-    c->buf.b[len] = 0x80;
+    ctx->buf.b[len] = 0x80;
     // if exceeding 56 bytes, transform it
     if (len >= 56) {
-      SM3_Transform (c);
+      SM3_Transform (ctx);
       // clear buffer
-      memset (c->buf.b, 0, SM3_CBLOCK);
+      memset (ctx->buf.b, 0, SM3_CBLOCK);
     }
     // add total bits
-    c->buf.q[7] = SWAP64((uint64_t)c->len * 8);
+    ctx->buf.q[7] = SWAP64((uint64_t)ctx->len * 8);
     // compress
-    SM3_Transform(c);
+    SM3_Transform(ctx);
     
-    // swap byte order
+    // return result
     for (i=0; i<SM3_LBLOCK; i++) {
-      c->s.w[i] = SWAP32(c->s.w[i]);
+      ((uint32_t*)out)[i] = SWAP32(ctx->s.w[i]);
     }
-    // copy digest to buffer
-    memcpy (dgst, c->s.b, SM3_DIGEST_LENGTH);
 }
