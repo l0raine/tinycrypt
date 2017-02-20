@@ -69,7 +69,7 @@ int main(void)
     hex2bin(res, tv_res);
     
     s20_setkey(&c, key, iv);
-    s20_cryptx(&c, strm, sizeof(strm));
+    s20_encrypt(sizeof(strm), strm, &c);
     
     printf ("\nSALSA20 test - %s", 
       equ(strm, res, 64) ? "OK" : "failed");

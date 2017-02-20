@@ -30,7 +30,7 @@
 ; -----------------------------------------------
 ; Salsa20 stream cipher in x86 assembly
 ;
-; size: 245 bytes
+; size: 235 bytes
 ;
 ; global calls use cdecl convention
 ;
@@ -42,8 +42,8 @@
       global s20_setkeyx
       global _s20_setkeyx
       
-      global s20_cryptx
-      global _s20_cryptx
+      global s20_encryptx
+      global _s20_encryptx
     %endif
     
 struc s20_ctx
@@ -104,9 +104,9 @@ s20_setkeyx:
 
 %define t0 ebp
 
-; void QUARTERROUND(s20_blk *blk, uint16_t index)
+; void s20_permute(s20_blk *blk, uint16_t index)
 ; expects edi points to x array
-QUARTERROUND:
+s20_permute:
     pushad
     push   a                ; save eax
     xchg   ah, al
@@ -152,39 +152,33 @@ s20_q0:
     popad
     ret
   
-; void s20_corex (s20_ctx *ctx, void *in, uint32_t len)
-; do not call directly
-; expects state in ebx, length in eax, input in edx
-_s20_corex:
-s20_corex:
+; void s20_streamx (s20_ctx *ctx, void *in, uint32_t len)
+_s20_streamx:
+s20_streamx:
     pushad
 
-    ; allocate 64-bytes local space, x
+    ; copy state to edi
     push   64
     pop    ecx
-    sub    esp, ecx
-    
-    ; copy state to x
-    mov    edi, esp
-    mov    esi, ebx
+    mov    ebx, esi
     rep    movsb
 
     ; move x into edi
-    mov    edi, esp
-    push   eax
+    pop    edi
+    push   edi
     push   20/2  ; 20 rounds
     pop    ebp
 s20_c0:
     ; load indexes
     call   s20_c1
-    dw 0C840h, 01D95h, 062EAh, 0B73Fh
-    dw 03210h, 04765h, 098BAh, 0EDCFh
+    dw     0C840h, 01D95h, 062EAh, 0B73Fh
+    dw     03210h, 04765h, 098BAh, 0EDCFh
 s20_c1:
     pop    esi  ; pointer to indexes
     mov    cl, 8
 s20_c2:
     lodsw
-    call   QUARTERROUND
+    call   s20_permute
     loop   s20_c2
     dec    ebp
     jnz    s20_c0
@@ -195,47 +189,44 @@ s20_c3:
     mov    eax, [ebx+ecx*4-4]
     add    [edi+ecx*4-4], eax
     loop   s20_c3
-
-    ; xor input with x
-    pop    ecx               ; ecx=len
-s20_c4:
-    mov    al, byte[edi+ecx-1]
-    xor    byte[edx+ecx-1], al
-    loop   s20_c4
     
     ; update block counter
     stc
     adc    dword[ebx+8*4], ecx
     adc    dword[ebx+9*4], ecx
-    
-    ; free stack
-    popad
-    popad
+
     ; restore registers
     popad
     ret
     
-_s20_cryptx:
-s20_cryptx:
+_s20_encryptx:
+s20_encryptx:
     pushad
-    lea    esi, [esp+32+4]
+    lea     esi, [esp+32+4]
     lodsd
-    xchg   ebx, eax
+    xchg    ecx, eax          ; ecx = length
     lodsd
-    xchg   edx, eax
+    xchg    ebx, eax          ; ebx = buf
     lodsd
-    xchg   ecx, eax
-    jecxz  s20_l1            ; exit if len==0
-    xor    eax, eax          ; r=0
-s20_l0:
-    mov    al, 64
-    cmp    ecx, eax          ; eax=len < 64 ? len : 64
-    cmovb  eax, ecx
-    call   s20_corex
-    add    edx, eax          ; p += r;
-    sub    ecx, eax          ; len -= r;
-    jnz    s20_l0
-s20_l1:
+    xchg    esi, eax          ; esi = ctx
+    pushad
+    pushad
+    mov     edi, esp          ; edi = stream[64]
+s_l0:
+    xor     eax, eax
+    jecxz   s_l2              ; exit if len==0
+    call    s20_streamx
+s_l1:
+    mov     dl, byte[edi+eax]
+    xor     byte[ebx+eax], dl
+    inc     eax
+    cmp     al, 64
+    loopnz  s_l1
+    add     ebx, eax
+    jmp     s_l0
+s_l2:
+    popad
+    popad
     popad
     ret
     

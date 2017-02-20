@@ -58,11 +58,9 @@
 #define ROTR32(v, n) ROTL32(v, 32 - (n))
 #define ROTR64(v, n) ROTL64(v, 64 - (n))
 
-typedef struct {
-  union {
+typedef union cube_state_t {
     uint8_t  b[128];
-    uint32_t w[32];
-  };
+    uint32_t w[32]; 
 } cube_state;
 
 #ifdef __cplusplus

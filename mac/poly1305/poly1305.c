@@ -31,83 +31,80 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "cc20.h"
-
 #define memset(x,y,z) __stosb(x,y,z)
 #define memcpy(x,y,z) __movsb(x,y,z)
 
-void add(uint32_t h[17], const uint32_t c[17])
+/**********************************************
+ *
+ * poly1305 addition
+ *
+ **********************************************/
+void poly1305_add(
+    uint32_t out[], 
+    const uint8_t in[], 
+    int inlen, 
+    uint8_t last)
 {
-  uint32_t i, x = 0;
-  
-  for (i=0; i<17; i++) { 
-    x += h[i] + c[i]; 
-    h[i] = x & 255; 
+  uint32_t c, i, x = 0;
+  uint8_t *p = (uint8_t*)in;
+
+  // add in to out
+  for (i=0; i<17; i++) {
+    c = *p;
+    c = (i == inlen) ? last : c;
+    c = (i  > inlen) ? 0    : c;
+    p = (i  < inlen) ? p+1  : p;
+    
+    x += out[i] + c; 
+    out[i] = x & 255; 
     x >>= 8; 
   }
 }
 
-void freeze(uint32_t x[17])
-{
-  uint32_t horig[17], minusp[17];
-  uint32_t i, negative;
-  
-  memset(minusp, 0, 17*4);
-
-  minusp[ 0] = 5;
-  minusp[16] = 252;
-
-  memcpy ((uint8_t*)horig, (uint8_t*)x, 17*4);
-  
-  add(x, minusp);
-  negative = -(x[16] >> 7);
-  
-  for (i=0; i<17; i++) {
-    x[i] ^= negative & (horig[i] ^ x[i]);
-  }
-}
-
-void squeeze(uint32_t x[17])
-{
-  uint32_t i;
-  uint32_t u = 0;
-  
-  for (i=0; i<16; i++) { 
-    u += x[i];
-    x[i] = u & 255; 
-    u >>= 8; 
-  }
-  
-  u += x[16];
-  x[16] = u & 3;
-  u = 5 * (u >> 2);
-  
-  for (i=0; i<16; i++) { 
-    u += x[i];
-    x[i] = u & 255;
-    u >>= 8;
-  }
-  x[16] += u;
-}
-
-// "P" is 2^130-5 or 3fffffffffffffffffffffffffffffffb
-void mulmod(uint32_t h[17],const uint32_t r[17])
+/**********************************************
+ *
+ * poly1305 modular multiplication
+ *
+ * "P" is 2^130-5 or 3fffffffffffffffffffffffffffffffb
+ *
+ **********************************************/
+void poly1305_mulmod(
+    uint32_t acc[17],
+    const uint32_t r[17])
 {
   uint32_t hr[17];
   uint32_t i, j, u;
 
+  memcpy ((uint8_t*)hr, (uint8_t*)acc, 17*4);
+  
+  // multiply
   for (i=0; i<17; i++) {
     u = 0;
     for (j=0; j<=i; j++) {
-      u += h[j] * r[i - j];
+      u += hr[j] * r[i - j];
     }
     for (; j<17; j++) {
-      u += 320 * h[j] * r[i + (17 - j)];
+      u += hr[j] * r[i + (17 - j)] * 320;
     }
-    hr[i] = u;
+    acc[i] = u;
   }
-  memcpy ((uint8_t*)h, (uint8_t*)hr, 17*4);
-  squeeze(h);
+  
+  for (u=0, j=0; j<2; j++)
+  {
+    for (i=0; i<16; i++) 
+    { 
+      u += acc[i];
+      acc[i] = u & 255; 
+      u >>= 8; 
+    }
+    if (!j) 
+    {
+      u += acc[16];
+      acc[16] = u & 3;
+      u = (u >> 2) * 5;
+    }
+  }
+  acc[16] += u;
 }
 
 /**********************************************
@@ -115,11 +112,15 @@ void mulmod(uint32_t h[17],const uint32_t r[17])
  * poly1305 mac function
  *
  **********************************************/
-void poly1305_mac (uint8_t *out, const uint8_t *in, 
-    uint32_t inlen, const uint8_t *k)
+void poly1305_mac (
+    uint8_t *out, 
+    const uint8_t *in, 
+    uint32_t inlen, 
+    const uint8_t *k)
 {
-  uint32_t i, len;
-  uint32_t r[17], acc[17], block[17];
+  uint32_t i, len, neg;
+  uint32_t r[17], acc[17];
+  uint8_t  minusp[16]={5};
   
   // copy r
   for (i=0; i<16; i++) {
@@ -127,52 +128,48 @@ void poly1305_mac (uint8_t *out, const uint8_t *in,
   }
   // clamp r
   r[ 3] &= 15;
-  r[ 4] &= 252;
   r[ 7] &= 15;
-  r[ 8] &= 252;
   r[11] &= 15;
-  r[12] &= 252;
   r[15] &= 15;
+  
+  r[ 4] &= 252;
+  r[ 8] &= 252;
+  r[12] &= 252;
   r[16]  = 0;
 
   // zero initialize accumulator
   memset ((uint8_t*)acc, 0, 17*4);
 
-  while (inlen > 0) {
-    // zero block
-    memset ((uint8_t*)block, 0, 17*4);
+  for (;;) 
+  {
+    // if zero length, break
+    if (inlen==0) break;
     
     // process 16 bytes or remaining
     len = inlen < 16 ? inlen : 16;
     
-    // store data in block
-    for (i=0; i<len; i++) {
-      block[i] = in[i];
-    }
-    
-    // store 1 at end of block
-    block[len] = 1;
-    
-    // add block to accumulator
-    add (acc, block);
-    
+    // add bytes to acc
+    poly1305_add (acc, in, len, 1);
+
     // multiply accumulator by r mod p
-    mulmod (acc, r);
-    
-    // update position
+    poly1305_mulmod (acc, r);
+
+    // update length and buffer position
     in    += len;
     inlen -= len;
   }
 
-  freeze(acc);
+  memcpy (r, acc, sizeof(r));
 
-  // add s
-  for (i=0; i<16; i++) {
-    block[i] = k[i + 16];
+  poly1305_add (acc, minusp, 16, 252);
+  neg = -(acc[16] >> 7);
+  
+  for (i=0; i<17; i++) {
+    acc[i] ^= neg & (r[i] ^ acc[i]);
   }
   
-  block[16] = 0;
-  add (acc, block);
+  // add s
+  poly1305_add (acc, &k[16], 16, 0);
   
   // return tag
   for (i=0; i<16; i++) {

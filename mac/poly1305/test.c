@@ -9,7 +9,7 @@
 #include "cc20.h"
 #include "poly1305.h"
 
-void poly1305_macx(void*, void*, int, void*); 
+void poly1305_macx(void*, const void*, int, const void*); 
 
 // 2.8.2 AEAD test vector
 
@@ -185,7 +185,7 @@ void poly1305_mac_test(void)
   uint8_t tag[16];
   int     equ;
   
-  poly1305_mac (tag, pm_msg, sizeof(pm_msg), pm_key);
+  poly1305_macx (tag, pm_msg, sizeof(pm_msg), pm_key);
   
   equ = memcmp(pm_tv, tag, 16)==0 ? 1 : 0;
   

@@ -1,11 +1,41 @@
-Chaskey Cipher
 
-    Article: Chaskey: An Efficient MAC Algorithm for 32-bit Microcontrollers, SAC'14[7]
-    Authors: Nicky Mouha, Bart Mennink, Anthony Van Herrewege, Dai Watanabe, Bart Preneel and Ingrid Verbauwhede
-    Target: Software 
+Chaskey Message Authentication Code
 
-Chaskey is a lightweight MAC algorithm optimised for 32-bit micro-controllers. It is based on a 128-bit block cipher, the Chaskey cipher, which uses ARX operations and an Even-Mansour structure. This means that there is no key schedule: the 128-bit master key is XOR-ed, then a public permutation is applied and then the master key is XOR-ed again. This simplicity is possible at the cost of a weaker security claim as in e.g. PRINCE or PRIDE because a generic attack exists with a time complexity of about 2128/D if the attacker obtains D plaintext-ciphertext pairs.
+Designers         Nicky Mouha, Bart Mennink, 
+                  Anthony Van Herrewege, Dai Watanabe, 
+                  Bart Preneel, Ingrid Verbauwhede
+First published   2014
+Key sizes         128-bits
+Block sizes       128-bits
+Structure         Evan-Mansour
+Rounds            16 (Long Time Support)
 
-The code implementing it is very simple and is given below. It is similar to that of SipHash.
+    
+  Copyright © 2017 Odzhan. All Rights Reserved.
 
-The original paper also suggests doubling the number of rounds of the Chaskey cipher to obtain an even more secure primitive, Chaskey-LTS (Long Time Support), with 16 rounds. It was later suggested[101], in reaction to Leurent's differential-linear attack[102], to use a variant with 12 rounds called Chaskey-12. 
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+  1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  3. The name of the author may not be used to endorse or promote products
+  derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY AUTHORS "AS IS" AND ANY EXPRESS OR
+  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
+  

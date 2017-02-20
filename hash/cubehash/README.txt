@@ -1,4 +1,6 @@
 
+CubeHash cryptographic hash
+
 Designers         Daniel J. Bernstein
 Certification     SHA-3
 Digest sizes      8, 16, 24, 32, ... 512
