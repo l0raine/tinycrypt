@@ -9,31 +9,36 @@ Key sizes         128 bits
 Block sizes       128 bits
 Rounds            16
 
-  Copyright © 2017 Odzhan. All Rights Reserved.
+Noekeon is a Substitution-Permutation Network operating on blocks of 128 
+bits using a 128-bits key. It operates on 4 words of 32 bits except for 
+the S-Box layer, "Gamma", which operates on 4-bits nibbles. The same 
+round key is used in every round; how it is derived depends on whether 
+related-key attacks must be considered or not. However, there exists 
+related-key differentials for both key schedules[96] It uses the 
+following operations. 
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are
-  met:
+Gamma: Consists in applying a 4-bit involution S-Box on nibbles 
+independently. Each of the 32 nibbles considered in Gamma is made of the 
+bits of index i in each of the 4 words for all i in [0, 31]. This leads 
+to a simple bitslice implementation of this layer. Most choices for 
+Gamma generated using the same design criteria would have lead to weak 
+ciphers but the one chosen in Noekeon does not[96]. Theta: A linear 
+layer which mixes words with each other and operates at the byte level. 
+It has a Lai-Massey structure where the Lai-Massey function is linear: x 
+\mapsto x \oplus (x <<< 8) \oplus (x >>> 8). The round key is XOR-ed 
+between the 2-steps of the Lai-Lassey operation. shift operations: Three 
+of the four words are rotated by different offsets, namely 1, 5 and 2. 
+Each rotations and their inverses are used. 
 
-  1. Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
+A round constant is XOR-ed in the internal state before applying Gamma 
+during encryption. Since the components are involution-based, decryption 
+can be implemented using the same circuit as encryption. 16 rounds are 
+used. 
 
-  2. Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
+It is claimed to be suitable for implementation in hardware and on 8-bit 
+processors. 
 
-  3. The name of the author may not be used to endorse or promote products
-  derived from this software without specific prior written permission.
+The best attack by the designers is a linear attack based on a 2-rounds 
+iterative linear trail covering 9 rounds, which is then extended to 
+cover 12 rounds through key guessing. 
 
-  THIS SOFTWARE IS PROVIDED BY AUTHORS "AS IS" AND ANY EXPRESS OR
-  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
-  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-  POSSIBILITY OF SUCH DAMAGE.
-  

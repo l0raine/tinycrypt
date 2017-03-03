@@ -83,7 +83,7 @@ ck_l0:
     shl    eax, 8            ; ck <<= 8
     lea    ebx, [ecx*4+edx]  ; ebx = (i*4) + j
     imul   ebx, ebx, 7       ; ebx *= 7
-    or     al, bl            ; ck |= ebx % 256
+    or     al, bl            ; ck |= ebx %= 256
     inc    edx               ; j++
     cmp    edx, 4            ; j<4
     jnz    ck_l0

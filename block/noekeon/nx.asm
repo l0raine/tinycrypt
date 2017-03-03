@@ -203,7 +203,7 @@ nxr_end:
     popad
     ret
     
-nkncpy:
+swapcpy:
     pushad
     push   4
     pop    ecx
@@ -225,12 +225,12 @@ _Noekeonx:
     lodsd
     ; copy key to local buffer
     xchg   eax, esi
-    call   nkncpy
+    call   swapcpy
     xchg   eax, esi
     lodsd
     ; copy data to local buffer
     xchg   eax, esi
-    call   nkncpy
+    call   swapcpy
     xchg   eax, esi
     mov    ebp, eax
     lodsd
@@ -266,7 +266,7 @@ nx_enc:
     jnz    nx_enc
 nx_xit:
     mov    edi, ebp
-    call   nkncpy    
+    call   swapcpy    
     popad
     popad
     ret

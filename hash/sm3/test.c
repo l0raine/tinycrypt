@@ -151,9 +151,9 @@ int main(int argc, char *argv[])
     memset(msg, 0, sizeof(msg));
     msg[i] = i;
     
-    SM3_Initx(&ctx);
-    SM3_Updatex(&ctx, msg, i);
-    SM3_Finalx(out, &ctx);
+    SM3_Init(&ctx);
+    SM3_Update(&ctx, msg, i);
+    SM3_Final(out, &ctx);
   
     if (memcmp(out, vectors[i], 32)) {
       printf ("\nHash for test vector %i failed", i+1);

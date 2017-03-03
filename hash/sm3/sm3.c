@@ -31,7 +31,7 @@
 
 #define  F(x, y, z) (((x) ^ (y) ^ (z)))
 #define FF(x, y, z) (((x) & (y)) | ((x) & (z)) | ((y) & (z))) 
-#define GG(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
+#define GG(x, y, z) ((z)  ^ ((x) & ((y) ^ (z))))
 
 #define P0(x) x ^ ROTL32(x,  9) ^ ROTL32(x, 17)
 #define P1(x) x ^ ROTL32(x, 15) ^ ROTL32(x, 23)
@@ -43,7 +43,7 @@
 ************************************************/
 void SM3_Transform (SM3_CTX *ctx) 
 {
-    uint32_t tt1, tt2, i, j, t, ss1, ss2, x, y;
+    uint32_t tt1, tt2, i, t, ss1, ss2, x, y;
     uint32_t w[68], s[8];
 
     #define a s[0]
@@ -72,11 +72,12 @@ void SM3_Transform (SM3_CTX *ctx)
       x ^= w[i- 9];
       y ^= w[i- 6];
       
-      w[i] =  P1(x) ^ y; 
+      w[i] = P1(x) ^ y; 
     }
 
     // compression function
-    for (i=0; i<64; i++) {
+    for (i=0; i<64; i++) 
+    {      
       t  = (i < 16) ? 0x79cc4519 : 0x7a879d8a;
       
       ss2 = ROTL32(a, 12);      
@@ -146,7 +147,7 @@ void SM3_Update (SM3_CTX *ctx, void *in, uint32_t len) {
     if (len==0) return;
     
     // get buffer index
-    idx = ctx->len & SM3_CBLOCK - 1;
+    idx = ctx->len & (SM3_CBLOCK - 1);
     
     // update length
     ctx->len += len;
@@ -172,14 +173,14 @@ void SM3_Final (void *out, SM3_CTX *ctx)
 {
     int i;
     
-    // see what length we have ere..
-    uint32_t len=ctx->len & SM3_CBLOCK - 1;
+    // get the current index
+    uint32_t idx = ctx->len & (SM3_CBLOCK - 1);
     // fill remaining with zeros
-    memset (&ctx->buf.b[len], 0, SM3_CBLOCK - len);
+    memset (&ctx->buf.b[idx], 0, SM3_CBLOCK - idx);
     // add the end bit
-    ctx->buf.b[len] = 0x80;
+    ctx->buf.b[idx] = 0x80;
     // if exceeding 56 bytes, transform it
-    if (len >= 56) {
+    if (idx >= 56) {
       SM3_Transform (ctx);
       // clear buffer
       memset (ctx->buf.b, 0, SM3_CBLOCK);
@@ -187,8 +188,7 @@ void SM3_Final (void *out, SM3_CTX *ctx)
     // add total bits
     ctx->buf.q[7] = SWAP64((uint64_t)ctx->len * 8);
     // compress
-    SM3_Transform(ctx);
-    
+    SM3_Transform(ctx);    
     // return result
     for (i=0; i<SM3_LBLOCK; i++) {
       ((uint32_t*)out)[i] = SWAP32(ctx->s.w[i]);

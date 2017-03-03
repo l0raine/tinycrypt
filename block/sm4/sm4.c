@@ -146,7 +146,7 @@ void sm4_setkey(sm4_ctx *c, const void *key, int enc) {
     }
     // reverse the order of keys if decrypting
     if (enc == SM4_DECRYPT) {
-      for (i=0; i<16; i++) {
+      for (i = 0; i < 16; i++) {
         XCHG(rk[i], rk[31 - i]);
       }
     }

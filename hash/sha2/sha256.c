@@ -62,9 +62,11 @@ uint32_t cbr2int (uint32_t x) {
 
 #define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
 #define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+
 #define EP0(x) (ROTR32(x,2) ^ ROTR32(x,13) ^ ROTR32(x,22))
 #define EP1(x) (ROTR32(x,6) ^ ROTR32(x,11) ^ ROTR32(x,25))
-#define SIG0(x) (ROTR32(x,7) ^ ROTR32(x,18) ^ ((x) >> 3))
+
+#define SIG0(x) (ROTR32(x, 7) ^ ROTR32(x,18) ^ ((x) >>  3))
 #define SIG1(x) (ROTR32(x,17) ^ ROTR32(x,19) ^ ((x) >> 10))
 
 /************************************************
