@@ -31,6 +31,7 @@
 #define SM4_H
 
 #include <stdint.h>
+#include <string.h>
 
 #define SM4_ROUNDS 32
 
@@ -73,6 +74,7 @@
    (ROTL64(v, 40) & 0x00FF000000FF0000ULL) | \
    (ROTL64(v, 56) & 0xFF000000FF000000ULL))
 #else
+#include <intrin.h>  
 #define SWAP32(v) _byteswap_ulong(v)  
 #define SWAP64(v) _byteswap_uint64(v)  
 #endif

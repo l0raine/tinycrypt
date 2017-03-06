@@ -103,31 +103,31 @@ int ecb_test (void)
   for (i=0; i<sizeof(ecb_keys)/sizeof(char*); i++)
   { 
     klen=hex2bin (key, ecb_keys[i]);
-    clen=hex2bin (ct1.v8, ecb_ct[i]);
-    plen=hex2bin (pt1.v8, ecb_tv[i]);
+    clen=hex2bin (ct1.b, ecb_ct[i]);
+    plen=hex2bin (pt1.b, ecb_tv[i]);
     
     aes_setkey (&ctx, &key);
     aes_encrypt (&ctx, &pt1, AES_ENCRYPT);
 
-    if (memcmp (ct1.v8, pt1.v8, clen)==0) {
+    if (memcmp (ct1.b, pt1.b, clen)==0) {
       printf ("\nEncryption passed test #%i - %08X %08X", 
-        (i+1), pt1.v32[0], ct1.v32[0]);
+        (i+1), pt1.w[0], ct1.w[0]);
       
-      plen=hex2bin (pt2.v8, ecb_tv[i]);
+      plen=hex2bin (pt2.b, ecb_tv[i]);
       
       aes_encrypt (&ctx, &pt1, AES_DECRYPT);
       
-      if (memcmp (pt1.v8, pt2.v8, plen)==0) {
+      if (memcmp (pt1.b, pt2.b, plen)==0) {
         printf ("\nDecryption OK!");
       } else {
-        printf ("\nDecryption failed.. %08X %08X", pt1.v32[0], pt2.v32[0]);
+        printf ("\nDecryption failed.. %08X %08X", pt1.w[0], pt2.w[0]);
       }
     } else {
       fails++;
       printf ("\nFailed test #%i : "
           "Got %08X %08X %08X %08X instead of %08X %08X %08X %08X", (i+1), 
-          pt1.v32[0], pt1.v32[1], pt1.v32[2], pt1.v32[3],
-          ct1.v32[0], ct1.v32[1], ct1.v32[2], ct1.v32[3]);
+          pt1.w[0], pt1.w[1], pt1.w[2], pt1.w[3],
+          ct1.w[0], ct1.w[1], ct1.w[2], ct1.w[3]);
     }
   }
   return fails;

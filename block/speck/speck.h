@@ -31,6 +31,7 @@
 #define SPECK_H
 
 #include <stdint.h>
+#include <string.h>
 
 #define SPECK_RNDS 27
 

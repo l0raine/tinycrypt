@@ -31,7 +31,7 @@
 
 void rc5_setkey (RC5_CTX *key, void *input)
 {  
-  uint32_t i, j, k, A, B, T, L[4], *kptr=(uint32_t*)input; 
+  uint32_t i, j, k, A, B, L[4], *kptr=(uint32_t*)input; 
   
   // initialize L with key
   for (i=0; i<4; i++) {

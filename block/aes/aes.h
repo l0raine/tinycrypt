@@ -70,10 +70,9 @@
 #define AES_BLK_LEN Nb*4
 
 typedef union _aes_blk_t {
-  uint8_t   v8[Nb*4];
-  uint16_t v16[Nb*2];
-  uint32_t v32[Nb];
-  uint64_t v64[Nb/2];
+  uint8_t  b[Nb*4];
+  uint32_t w[Nb];
+  uint64_t q[Nb/2];
 } aes_blk;
 
 #pragma pack(push, 1)

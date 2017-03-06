@@ -1,8 +1,5 @@
 /**
-  Copyright © 2015 Odzhan. 
-  Copyright © 2008 Daniel Otte
-  
-  All Rights Reserved.
+  Copyright © 2015 Odzhan. All Rights Reserved.
   
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions are
@@ -34,6 +31,7 @@
 #define DES_H
 
 #include <stdint.h>
+#include <string.h>
 
 #define DES_BLK_LEN 8
 #define DES_ROUNDS 16

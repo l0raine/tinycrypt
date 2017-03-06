@@ -72,7 +72,7 @@ void kuz_init(kuz_key_t *key)
 
   for (i=0; i<256; i++) {
     key->pi[i] = kuz_pi[i];
-    key->pi_inv[kuz_pi[i]] = i;
+    key->pi_inv[kuz_pi[i]] = (uint8_t)i;
   }
 }
 
@@ -166,7 +166,7 @@ void kuz_setkey(kuz_key_t *kuz, const uint8_t key[32])
   for (i=1; i<=32; i++) {
     // C Value
     memset (&c.b[0], 0, 16);
-    c.b[15] = i;    // load round in lsb
+    c.b[15] = (uint8_t)i;    // load round in lsb
 
     kuz_lt(&c, KUZ_ENCRYPT);
 
@@ -193,7 +193,7 @@ void kuz_setkey(kuz_key_t *kuz, const uint8_t key[32])
 // encrypt/decrypt a block
 void kuz_encrypt(kuz_key_t *key, void *blk, int enc)
 {
-  int    i, j;
+  int    i;
   w128_t *x=(w128_t*)blk;
 
   if (enc==KUZ_ENCRYPT)

@@ -7,6 +7,7 @@
 #define RC6_H
 
 #include <stdint.h>
+#include <string.h>
 
 #define RC6_ROUNDS 20
 #define RC6_KR     (2*(RC6_ROUNDS+2))

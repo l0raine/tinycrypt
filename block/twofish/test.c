@@ -1,7 +1,6 @@
 
-// test unit for tf.c
+// test unit for twofish.c
 // odzhan
-
 
 #include <stdio.h>
 #include <string.h>

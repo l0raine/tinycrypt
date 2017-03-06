@@ -1,4 +1,3 @@
-
 /**
   Copyright © 2017 Odzhan. All Rights Reserved.
 
@@ -32,6 +31,7 @@
 #define NOEKEON_H
 
 #include <stdint.h>
+#include <string.h>
 
 #define NOEKEON_ENCRYPT 0
 #define NOEKEON_DECRYPT 1
@@ -65,7 +65,13 @@ typedef union _w128_t {
 #define ROTR32(v, n) ROTL32(v, 32 - (n))
 #define ROTR64(v, n) ROTL64(v, 64 - (n))
 
-#define SWAP32(v) _byteswap_ulong(v)
+#ifdef INTRINSICS
+#define SWAP32(v) _byteswap_ulong (v)
+#else
+#define SWAP32(v) \
+  ((ROTL32(v,  8) & 0x00FF00FFUL) | \
+   (ROTL32(v, 24) & 0xFF00FF00UL))
+#endif
    
 #define XCHG(x, y, t) (t) = (x); (x) = (y); (y) = (t);
    

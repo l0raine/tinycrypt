@@ -94,7 +94,7 @@ uint8_t SubByte (uint8_t x, int enc)
 // ------------------------------------
 uint32_t SubWord (uint32_t x)
 {
-  uint8_t i;
+  uint8_t  i;
   uint32_t r=0;
 
   for (i=0; i<4; i++) {
@@ -112,7 +112,7 @@ void SubBytes (aes_blk *state, int enc)
   int8_t i;
 
   for (i=0; i<16; i++) {
-    state->v8[i] = SubByte(state->v8[i], enc);
+    state->b[i] = SubByte(state->b[i], enc);
   }
 }
 // ------------------------------------
@@ -127,7 +127,7 @@ void ShiftRows (aes_blk *state, int enc)
     x=0;
     // get row
     for (j=i; j<16; j+=4) {
-      x |= state->v8[j];
+      x |= state->b[j];
       x=ROTR32(x, 8);
     }
     // rotate depending on enc
@@ -138,7 +138,7 @@ void ShiftRows (aes_blk *state, int enc)
     }
     // set row
     for (j=i; j<16; j+=4) {
-      state->v8[j] = (x & 0xff);
+      state->b[j] = (x & 0xff);
       x >>= 8;
     }
   }
@@ -175,10 +175,10 @@ void MixColumns (uint32_t *state, int enc)
 void AddRoundKey (aes_blk *state, uint32_t w[], int rnd)
 {
   uint32_t i;
-  uint8_t *key=(uint8_t*)&w[rnd*4];
+  uint8_t  *key=(uint8_t*)&w[rnd*4];
 
   for (i=0; i<16; i++) {
-    state->v8[i] ^= key[i];
+    state->b[i] ^= key[i];
   }
 }
 // ------------------------------------
@@ -186,10 +186,10 @@ void AddRoundKey (aes_blk *state, uint32_t w[], int rnd)
 // ------------------------------------
 void aes_setkey (aes_ctx *ctx, void *key)
 {
-  int i;
+  int      i;
   uint32_t x;
   uint32_t *w=(uint32_t*)ctx->w;
-  uint8_t rcon=1;
+  uint32_t rcon=1;
 
   for (i=0; i<Nk; i++) {
     w[i]=((uint32_t*)key)[i];
@@ -197,12 +197,12 @@ void aes_setkey (aes_ctx *ctx, void *key)
 
   for (i=Nk; i<Nb*(Nr+1); i++)
   {
-    x=w[i-1];
+    x = w[i-1];
     if ((i % Nk)==0) {
       x = RotWord(x);
       x = SubWord(x) ^ rcon;
       rcon=gf_mul2(rcon);
-    } else if (Nk > 6 && i % Nk == 4) {
+    } else if ((Nk > 6) && ((i % Nk) == 4)) {
       x=SubWord(x);
     }
     w[i] = w[i-Nk] ^ x;
@@ -213,7 +213,7 @@ void aes_setkey (aes_ctx *ctx, void *key)
 // ------------------------------------
 void aes_encrypt (aes_ctx *ctx, void *state, int enc)
 {
-  uint8_t round;
+  uint8_t  round;
   uint32_t *w=(uint32_t*)ctx->w;
 
   if (enc==AES_ENCRYPT)

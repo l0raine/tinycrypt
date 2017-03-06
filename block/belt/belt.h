@@ -30,6 +30,7 @@
 #ifndef BELT_H
 #define BELT_H
 
+#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -43,7 +44,7 @@ typedef union {
 } w32_t;
 
 // 128-bit type
-typedef struct {
+typedef struct _w128_t {
     union {
       uint8_t  v8[16];
       uint32_t w[4];
@@ -54,7 +55,7 @@ typedef struct {
 } w128_t;
 
 // 256-bit type
-typedef struct {
+typedef struct _w256_t {
     union {
       uint8_t  v8[32];
       uint32_t w[8];

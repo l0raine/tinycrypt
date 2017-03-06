@@ -34,6 +34,7 @@
 #define THREEFISH_DECRYPT 1
 
 #include <stdint.h>
+#include <string.h>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -111,7 +112,9 @@ extern "C" {
 
   void threefish_setkey (threefish_ctx_t*, const void*, const void*);
   void threefish_setkeyx (threefish_ctx_t*, const void*, const void*);
+  
   void threefish_encrypt (const threefish_ctx_t*, void*, uint32_t);
+  void threefish_encryptx (const threefish_ctx_t*, void*, uint32_t);
 
 #ifdef __cplusplus
 }
