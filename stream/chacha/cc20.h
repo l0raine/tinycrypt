@@ -62,10 +62,9 @@
 #endif
 
 typedef union _cc20_blk_t {
-  uint8_t  v8[CC20_BLK_LEN];
-  uint16_t v16[CC20_BLK_LEN/2];
-  uint32_t v32[CC20_BLK_LEN/4];
-  uint64_t v64[CC20_BLK_LEN/8];
+  uint8_t  b[CC20_BLK_LEN];
+  uint32_t w[CC20_BLK_LEN/4];
+  uint64_t q[CC20_BLK_LEN/8];
 } cc20_blk;
 
 typedef struct _cc20_ctx_t {

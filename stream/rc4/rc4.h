@@ -31,6 +31,7 @@
 #define RC4_H
 
 #include <stdint.h>
+#include <string.h>
 
 #pragma pack(push, 1)
 typedef struct _RC4_KEY {
@@ -44,7 +45,7 @@ extern "C" {
 #endif
 
   void RC4_set_key (RC4_KEY*, uint32_t, void*);
-  void RC4 (RC4_KEY*, uint32_t, void*, void*);
+  void RC4 (RC4_KEY*, uint32_t, void*);
 
 #ifdef __cplusplus
 }

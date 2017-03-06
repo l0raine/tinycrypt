@@ -78,7 +78,7 @@ void chacha_permute(cc20_blk *blk, uint16_t idx)
 }
 
 // generate stream of bytes
-void cc20_core (cc20_ctx *c, cc20_blk *x)
+void cc20_stream (cc20_ctx *c, cc20_blk *x)
 {
     int i, j;
 
@@ -109,7 +109,7 @@ void cc20_core (cc20_ctx *c, cc20_blk *x)
 // encrypt or decrypt stream of bytes
 void cc20_encrypt (uint32_t len, void *in, cc20_ctx *ctx) 
 {
-    uint32_t r;
+    uint32_t r, i;
     cc20_blk stream;
     uint8_t  *p=(uint8_t*)in;
     

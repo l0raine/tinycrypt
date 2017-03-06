@@ -34,7 +34,7 @@ uint32_t hc256_generate(hc_ctx* c)
 {
     uint32_t r, i, i3, i10, i12, i1023;
     uint32_t *x0, *x1;
-    uint32_t w0, w1, w2, w3, t;
+    uint32_t w0, w1, t;
     
     t=c->ctr;
     
