@@ -30,18 +30,19 @@
 ; -----------------------------------------------
 ; Modular Exponetiation in x86 assembly
 ;
-; size: 138 bytes or 141 for slightly faster version
+; size: 137 bytes or 140 for slightly faster version
 ;
 ; global calls use cdecl convention
 ;
 ; -----------------------------------------------
 
- %define BYTES 1
+ ;%define BYTES 1
 
   bits 32
   
   %ifndef BIN
     global _modexp
+    global modexp
   %endif
 
 _modexp:
@@ -59,10 +60,8 @@ modexp:
     xchg   ebp, eax          ; ebp = modulus
     lodsd                   
     xchg   edi, eax          ; edi = result
-    pop    esi               ; esi = base
-    
+    pop    esi               ; esi = base    
     inc    edx               ; edx = x=1
-    stc                      ; r   = xmod (b, e, m, 1)
     db     0b0h              ; mov al, 0x60 to mask pushad
 mulmod:
     pushad                   ; save registers
@@ -150,16 +149,6 @@ ld_fn:
     dec    edx
     js     cntbits
     sub    dword[esp], addmod - mulmod
-; 
-; Find the most significant bit in big number
-; Return value in eax
-;
-; in: edx = 0, 
-;     ecx = max size of memory in bytes, 
-;     ebx = pointer to memory
-;
-; out: eax = last bit in array
-;
 cntbits:
     xor    edx, edx
     lea    eax, [edx+ecx*8]
