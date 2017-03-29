@@ -1,5 +1,5 @@
 ;
-;  Copyright © 2017 Odzhan. All Rights Reserved.
+;  Copyright © 2015 Odzhan. All Rights Reserved.
 ;
 ;  Redistribution and use in source and binary forms, with or without
 ;  modification, are permitted provided that the following conditions are
@@ -26,50 +26,86 @@
 ;  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 ;  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;  POSSIBILITY OF SUCH DAMAGE.
-;
-; -----------------------------------------------
-; Emulation of INTEL CRC32 instruction using x86 assembly
-;
-; size: 46 bytes
-;
-; global calls use cdecl convention
-;
-; -----------------------------------------------
 
     bits 32
     
     %ifndef BIN
-      global _icrc32x
-    %endif
+      global crc16x
+      global _crc16x      
+      
+      global crc32cx
+      global _crc32cx
     
-icrc32x:    
-_icrc32x:
+      global crc32x
+      global _crc32x
+    %endif
+
+crc16x:    
+_crc16x:
+    pushad
+    popad
+    ret
+    
+crc32cx:    
+_crc32cx:
     pushad
     lea    esi, [esp+32+4]
     lodsd
-    xchg   ebx, eax          ; edx = crc
+    xchg   edx, eax          ; edx = crc
     lodsd
     xchg   ecx, eax          ; ecx = inlen
     lodsd
     xchg   esi, eax          ; esi = in
-    jecxz  crc_l2            ; if (inlen==0) return crc;
+    xor    eax, eax          ; eax = 0
+    jecxz  crcc_l3            ; if (inlen==0) return crc;
+crcc_l0:
+    lodsb                    ; al = *p++
+    xor    dl, al            ; crc ^= al
+    xchg   eax, ecx
+    mov    cl, 8
+crcc_l1:
+    shr    edx, 1            ; crc >>= 1
+    jnc    crcc_l2
+    xor    edx, 0x82F63B78
+crcc_l2:
+    loop   crcc_l1
+    xchg   eax, ecx
+    loop   crcc_l0
+crcc_l3:
+    mov    [esp+28], edx     ; return crc    
+    popad
+    ret
+    
+    
+crc32x:    
+_crc32x:
+    pushad
+    lea    esi, [esp+32+4]
+    lodsd
+    xchg   edx, eax          ; edx = crc
+    not    edx
+    lodsd
+    xchg   ecx, eax          ; ecx = inlen
+    lodsd
+    xchg   esi, eax          ; esi = in
+    xor    eax, eax          ; eax = 0
+    jecxz  crc_l3            ; if (inlen==0) return crc;
 crc_l0:
-    lodsb                    ; c = *in++
-    push   ecx
-    push   8
-    pop    ecx
-    xor    bl, al            ; crc ^= c
+    lodsb                    ; al = *p++
+    xor    dl, al            ; crc ^= al
+    xchg   eax, ecx
+    mov    cl, 8
 crc_l1:
-    mov    eax, ebx          ; eax = crc
-    and    eax, 1            ; &= 1
-    imul   eax, -2097792136  ; eax * 0x82F63B78
-    shr    ebx, 1            ; crc >>= 1
-    xor    ebx, eax          ; crc ^= eax 
-    loop   crc_l1    
-    pop    ecx
-    loop   crc_l0    
-crc_l2:    
-    mov    [esp+28], ebx     ; return crc    
+    shr    edx, 1            ; crc >>= 1
+    jnc    crc_l2
+    xor    edx, 0xEDB88320
+crc_l2:
+    loop   crc_l1
+    xchg   eax, ecx
+    loop   crc_l0
+crc_l3:    
+    not    edx
+    mov    [esp+28], edx     ; return ~crc    
     popad
     ret
     

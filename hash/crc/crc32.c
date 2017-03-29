@@ -22,14 +22,6 @@ uint32_t xcrc32(
     for (i=0; i<8; i++) {
       crc = (crc >> 1) ^ (MAGIC32 * (crc & 1));
     }    
-    /*for (i=0; i<8; i++)
-    {
-      if (((crc ^ c) & 1) != 0)
-        crc = (crc>>1) ^ MAGIC32;
-      else
-        crc = (crc>>1);
-      c >>= 1;
-    }*/
   }
   return ~crc;
 }
